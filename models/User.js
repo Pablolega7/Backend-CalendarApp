@@ -1,12 +1,12 @@
-
 const { Schema, model } = require('mongoose');
 
 const UserSchema = Schema({
-    name: {
+
+    name   : {
         type     : String,
         required :  true
     },
-    email: {
+    email  : {
         type     : String,
         required :  true,
         unique   :  true
@@ -18,4 +18,3 @@ const UserSchema = Schema({
 });
 
 module.exports = model( 'User', UserSchema );
-
