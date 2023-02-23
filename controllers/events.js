@@ -1,37 +1,112 @@
 const response = require('express');
+const Event    = require('../models/Event');
 
-const getEvents = ( req, res = response ) => {
+const getEvents = async ( req, res = response ) => {
 
-    console.log( req.body );
+    const events = await Event.find().populate( 'user', 'name' );
 
     res.json({
         ok : true,
-        msg: 'getEvents'
+        events
     });
 };
 
-const createEvent = ( req, res = response ) => {
+const createEvent = async ( req, res = response ) => {
 
-    res.json({
-        ok : true,
-        msg: 'createEvent'
-    });
+    const event = new Event( req.body );
+
+    try {
+      event.user = req.uid;
+      const eventSave = await event.save();
+
+        res.status( 201 ).json({
+            ok   : true,
+            event: eventSave
+        });
+    } catch (error) {
+        res.status( 500 ).json({
+            ok : false,
+            msg: 'Please contact the administrator'
+        });
+    };
 };
 
-const updateEvent = ( req, res = response ) => {
+const updateEvent = async ( req, res = response ) => {
 
-    res.json({
-        ok : true,
-        msg: 'updateEvent'
-    });
+    const eventId = req.params.id;
+    const uid     = req.uid;
+
+    try {
+
+        const event = await Event.findById( eventId );
+        if ( !event ) {
+            return res.status( 404 ).json({
+                ok : false,
+                msg: 'Event not found by id'
+            });
+        };
+
+        if ( event.user.toString() !== uid ) {
+            return res.status( 401 ).json({
+                ok : false,
+                msg: 'You do not have permission to edit this event'
+            });
+        };
+
+        const newEvent = {
+            ...req.body,
+            user: uid
+        };
+
+        const eventUpdate = await Event.findByIdAndUpdate( eventId, newEvent, { new: true } );
+
+        res.json({
+            ok   : true,
+            event: eventUpdate
+        });
+
+    } catch ( error ) {
+        console.log( error );
+        res.status( 500 ).json({
+            ok : false,
+            msg: 'Please contact the administrator'
+        });
+    };
 };
 
-const deleteEvent = ( req, res = response ) => {
+const deleteEvent = async ( req, res = response ) => {
 
-    res.json({
-        ok : true,
-        msg: 'deleteEvent'
-    });
+    const eventId = req.params.id;
+    const uid     = req.uid;
+
+    try {
+
+        const event = await Event.findById( eventId );
+        if ( !event ) {
+            return res.status( 404 ).json({
+                ok : false,
+                msg: 'Event not found by id'
+            });
+        };
+
+        if ( event.user.toString() !== uid ) {
+            return res.status( 401 ).json({
+                ok : false,
+                msg: 'You do not have permission to delete this event'
+            });
+        };
+
+       await Event.findByIdAndDelete( eventId );
+
+        res.json({ ok   : true });
+
+    } catch (error) {
+        console.log( error );
+        res.status( 500 ).json({
+            ok : false,
+            msg: 'Please contact the administrator'
+        });
+    };
 };
 
 module.exports = {
